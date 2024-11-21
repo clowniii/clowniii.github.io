@@ -1,7 +1,6 @@
 <!-- _navbar.md -->
 
-- [En](/)
-- [chinese](/zh-cn/)
+- [GitHub](https://github.com/clowniii)
 
 * Getting started
 
