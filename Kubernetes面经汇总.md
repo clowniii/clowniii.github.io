@@ -60,6 +60,62 @@
 
 （可在面试时举例 YAML 或 Rego 片段，展示实际落地能力）
 
+## 查漏补缺（101问要点补充）
+
+问：Job 与 CronJob 的使用场景与注意事项？
+答：Job 负责一次性/并行批任务完成，CronJob 负责定时调度；注意并发策略（Forbid/Replace）、历史保留、资源与重试上限，避免密集调度压垮集群。
+
+问：Init 容器与 Sidecar 的差异？
+答：Init 容器在主容器前串行运行，用于准备依赖/初始化数据；Sidecar 与主容器并行，提供日志/代理/同步等常驻能力。二者配合可实现“先准备、后治理”。
+
+问：QoS 类别（Guaranteed/Burstable/BestEffort）如何影响驱逐？
+答：依据 requests/limits 设置决定 QoS：Guaranteed（requests=limits 且为所有资源）最不易被驱逐；BestEffort 最先被驱逐。合理设置 requests/limits 可提升关键服务稳定性。
+
+问：Eviction 信号与节点压力处理？
+答：Kubelet 基于内存/磁盘压力等触发驱逐；使用 PDB 限制同时驱逐数，结合 PriorityClass 保留关键服务；通过监控与容量规划预防长期压力。
+
+问：ResourceQuota 与 LimitRange 的作用？
+答：ResourceQuota 约束命名空间的总体资源配额（CPU/内存/PVC/对象数），LimitRange 为单 Pod/容器设定默认/最大/最小值。用于防止资源抢占与失控。
+
+问：RBAC 的核心对象与最佳实践？
+答：Role/ClusterRole + RoleBinding/ClusterRoleBinding，将权限最小化授予到 ServiceAccount；按命名空间隔离，避免使用 `cluster-admin`；使用 Aggregated Roles 管理组合权限。
+
+问：Admission Webhook 的用途？
+答：在准入阶段对资源进行校验（Validating）或修改（Mutating），常用于策略治理、自动标签注入、镜像重写等；需关注高可用与超时、失败策略（Fail/Ignore）。
+
+问：API 版本与弃用策略？
+答：遵循 `v1alpha1/v1beta1/v1` 的成熟度，API 可能随版本弃用（deprecation）；使用 `kubectl api-resources` 与发行说明核对，在升级前完成资源迁移与兼容性测试。
+
+问：OwnerReferences/Finalizers 如何影响垃圾回收？
+答：OwnerReferences 决定层级回收；Finalizers 阻止立即删除，执行清理逻辑后移除 finalizer；常见于 CRD/外部资源的安全回收。
+
+问：kube-proxy 的 iptables 与 IPVS 模式差异？
+答：IPVS 采用内核级虚拟服务，性能与扩展性更好；iptables 规则多时可能影响性能。现代集群通常优先 IPVS。
+
+问：CoreDNS 与服务发现机制？
+答：CoreDNS 通过 kube-dns 插件从 API 中生成域名与记录；Headless Service 结合 StatefulSet 提供稳定 A 记录用于点对点通信。
+
+问：Metrics Server、HPA、VPA、Cluster Autoscaler 的区别？
+答：Metrics Server 提供资源指标（CPU/内存）给 HPA；HPA 调整副本数，VPA 调整 Pod 的 requests/limits，Cluster Autoscaler 调整节点规模。三者可组合但需避免相互打架。
+
+问：Kubelet 的主要职责？
+答：节点级容器生命周期管理：拉取镜像、创建/删除容器、探针、卷挂载、上报状态与指标；与容器运行时通过 CRI 通信，与存储通过 CSI，与网络通过 CNI。
+
+问：镜像预拉取与启动优化？
+答：通过镜像缓存/预拉取 Daemon、减小镜像（多阶段构建、distroless）、并行拉取、减少 init 容器耗时；readiness 控制切流避免冷启动影响用户。
+
+问：Namespace 规划与多租户模式？
+答：按环境/团队/业务域进行命名空间划分；结合配额、RBAC、NetworkPolicy 与策略治理形成多租户隔离；必要时使用虚拟集群或多集群进一步隔离。
+
+问：etcd 备份与恢复要点？
+答：定期快照与压缩、监控健康与大小限制；恢复需与 API Server 版本兼容，严格演练灾备流程；控制面节点建议偶数容错（如 3/5 节点）并分区容灾。
+
+问：垃圾回收与级联删除的风险？
+答：谨慎使用级联删除，防止误删；在 CRD/外部资源场景通过 Finalizers 做安全清理；审计与审批流程防止生产环境的危险操作。
+
+问：多环境分层的最佳实践？
+答：dev/stage/prod 分层，多租户隔离；以 GitOps 管理环境差异（values/overlay），配合策略校验与审批；灰度/蓝绿/回滚的流程统一在平台层实现。
+
 问：Deployment、StatefulSet、DaemonSet 区别？
 答：Deployment 管理无状态副本与滚动升级；StatefulSet 保持稳定身份、有序滚动，常配合 PVC 用于有状态服务；DaemonSet 在每个（或匹配的）节点上都运行一个 Pod，适合日志采集/监控代理。
 
